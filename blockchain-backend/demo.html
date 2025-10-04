@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Multi-Contract Test Dashboard</title>
+    <style>
+        body { background-color: #121212; color: #e0e0e0; font-family: system-ui, sans-serif; margin: 2em; }
+        h1, h2, legend { color: #ffffff; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 15px; margin-top: 10px; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #28a745; cursor: default; }
+        input { background-color: #2a2a2a; color: #e0e0e0; border: 1px solid #444; padding: 8px; border-radius: 5px; margin-bottom: 5px; width: 400px; }
+        hr { border-color: #333; margin-top: 2em; margin-bottom: 2em;}
+        fieldset { border: 1px solid #444; border-radius: 5px; margin-bottom: 1.5em; }
+        pre { background-color: #1a1a1a; padding: 1em; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>SIH Multi-Contract Test Dashboard</h1>
+    <button id="connectButton">Connect Wallet</button>
+    <p id="walletAddress"></p>
+    <hr>
+
+    <h2>ADMIN ACTIONS</h2>
+    <fieldset>
+        <legend>Add Institute</legend>
+        <input id="admin_addInstitute_name" type="text" placeholder="Institute Name (e.g., ITI Jharkhand)"><br>
+        <input id="admin_addInstitute_wallet" type="text" placeholder="Institute Wallet Address (0x...)"><br>
+        <button id="admin_addInstitute_button">Add Institute</button>
+    </fieldset>
+    <fieldset>
+        <legend>Revoke Institute</legend>
+        <input id="admin_revokeInstitute_id" type="text" placeholder="Institute ID (e.g., 1)"><br>
+        <button id="admin_revokeInstitute_button">Revoke Institute</button>
+    </fieldset>
+    <hr>
+
+    <h2>INSTITUTE ACTIONS</h2>
+    <fieldset>
+        <legend>Add Staff</legend>
+        <input id="inst_addStaff_name" type="text" placeholder="Staff Member's Name"><br>
+        <input id="inst_addStaff_wallet" type="text" placeholder="Staff's Wallet Address (0x...)"><br>
+        <button id="inst_addStaff_button">Add Staff</button>
+    </fieldset>
+    <fieldset>
+        <legend>Revoke Staff</legend>
+        <input id="inst_revokeStaff_id" type="text" placeholder="Staff ID (e.g., 1)"><br>
+        <button id="inst_revokeStaff_button">Revoke Staff</button>
+    </fieldset>
+    <fieldset>
+        <legend>Register Learner (Receiver)</legend>
+        <input id="inst_registerLearner_wallet" type="text" placeholder="Learner's Wallet Address (0x...)"><br>
+        <input id="inst_registerLearner_hash" type="text" placeholder="Learner's Identity Hash (bytes32)"><br>
+        <button id="inst_registerLearner_button">Register Learner</button>
+    </fieldset>
+    <fieldset>
+        <legend>Deactivate Learner (Receiver)</legend>
+        <input id="inst_deactivateLearner_id" type="text" placeholder="Learner ID (e.g., 1)"><br>
+        <button id="inst_deactivateLearner_button">Deactivate Learner</button>
+    </fieldset>
+    <fieldset>
+        <legend>Add Template</legend>
+        <input id="inst_addTemplate_name" type="text" placeholder="Template Name (e.g., Certified Welder)"><br>
+        <input id="inst_addTemplate_desc" type="text" placeholder="Template Description"><br>
+        <button id="inst_addTemplate_button">Add Template</button>
+    </fieldset>
+    <hr>
+
+    <h2>STAFF ACTIONS</h2>
+    <fieldset>
+        <legend>Issue Certificate</legend>
+        <input id="staff_issueCert_learnerId" type="text" placeholder="Learner ID (e.g., 1)"><br>
+        <input id="staff_issueCert_templateId" type="text" placeholder="Template ID (e.g., 1)"><br>
+        <input id="staff_issueCert_validUntil" type="text" placeholder="Valid Until Timestamp (0 for none)"><br>
+        <input id="staff_issueCert_hash" type="text" placeholder="Details Hash (bytes32)"><br>
+        <button id="staff_issueCert_button">Issue Certificate</button>
+    </fieldset>
+    <fieldset>
+        <legend>Revoke Certificate</legend>
+        <input id="staff_revokeCert_id" type="text" placeholder="Certificate ID (e.g., 1)"><br>
+        <button id="staff_revokeCert_button">Revoke Certificate</button>
+    </fieldset>
+    <hr>
+
+    <h2>Result</h2>
+    <pre id="result"></pre>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="./test.js"></script>
+</body>
+</html>

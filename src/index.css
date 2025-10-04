@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 65% 11%;
+    --foreground: 0 0% 100%;
+
+    --card: 210 50% 15%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 210 55% 13%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 210 65% 11%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 45% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 25%;
+    --muted-foreground: 0 0% 70%;
+
+    --accent: 158 100% 50%;
+    --accent-foreground: 210 65% 11%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 100% 50%;
+    --success-foreground: 210 65% 11%;
+
+    --border: 210 40% 25%;
+    --input: 210 40% 25%;
+    --ring: 158 100% 50%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(210 65% 11%), hsl(210 55% 18%));
+    --gradient-accent: linear-gradient(135deg, hsl(158 100% 50%), hsl(158 100% 40%));
+    --gradient-glow: radial-gradient(circle at center, hsl(158 100% 50% / 0.15), transparent 70%);
+    
+    --shadow-neon: 0 0 20px hsl(158 100% 50% / 0.3), 0 0 40px hsl(158 100% 50% / 0.2);
+    --shadow-card: 0 8px 30px hsl(210 65% 5% / 0.5);
+    --shadow-subtle: 0 4px 15px hsl(210 65% 5% / 0.3);
+
+    --animation-glow: glow 2s ease-in-out infinite alternate;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 600;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-glow {
+    background: var(--gradient-glow);
+  }
+
+  .shadow-neon {
+    box-shadow: var(--shadow-neon);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-subtle {
+    box-shadow: var(--shadow-subtle);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px hsl(158 100% 50% / 0.5);
+  }
+
+  .blockchain-grid {
+    background-image: 
+      linear-gradient(hsl(158 100% 50% / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(158 100% 50% / 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px hsl(158 100% 50% / 0.3), 0 0 20px hsl(158 100% 50% / 0.2);
+  }
+  to {
+    box-shadow: 0 0 20px hsl(158 100% 50% / 0.5), 0 0 40px hsl(158 100% 50% / 0.3);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
