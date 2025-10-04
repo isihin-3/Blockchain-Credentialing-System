@@ -54,7 +54,7 @@ export const Navigation = () => {
               <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <span className="font-heading text-xl font-bold bg-gradient-to-r from-foreground to-accent bg-clip-text text-transparent">
-              CertifyIndia
+              Ordinals
             </span>
           </Link>
 

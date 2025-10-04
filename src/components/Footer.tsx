@@ -36,7 +36,7 @@ export const Footer = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Shield className="h-8 w-8 text-accent" />
-              <span className="font-heading text-xl font-bold">CertifyIndia</span>
+              <span className="font-heading text-xl font-bold">Ordinals</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Blockchain-powered credentials that are secure, verifiable, and trusted forever.
@@ -109,7 +109,7 @@ export const Footer = () => {
         <div className="pt-8 border-t border-border/40">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              © {currentYear} CertifyIndia. All rights reserved.
+              © {currentYear} Ordinals. All rights reserved.
             </p>
             <p className="text-sm text-muted-foreground">
               Built with blockchain technology for a trusted future

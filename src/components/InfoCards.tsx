@@ -28,7 +28,7 @@ export const InfoCards = () => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-16 space-y-4">
           <h2 className="font-heading text-4xl md:text-5xl font-bold">
-            Why Choose <span className="text-accent">CertifyIndia</span>?
+            Why Choose <span className="text-accent">Ordinals</span>?
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Built on blockchain technology to ensure trust, security, and accessibility
