@@ -122,8 +122,8 @@ export function CertificatePreview({ isOpen, onClose, certificateData }: Certifi
               <p className="font-bold text-accent text-xl">{marks}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {marks === "🔒 ***HASHED***" 
-                  ? "Marks and Aadhar are cryptographically hashed for security" 
-                  : "* Marks and Aadhar will be hashed during certificate issuance"
+                  ? "Learner name and marks/score are cryptographically hashed and stored on the blockchain. Only the hash will be stored for verification purposes." 
+                  : "Learner name and marks/score will be cryptographically hashed and stored on the blockchain. Only the hash will be stored for verification purposes."
                 }
               </p>
             </div>
@@ -149,7 +149,7 @@ export function CertificatePreview({ isOpen, onClose, certificateData }: Certifi
           {/* Security Note */}
           <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
             <p className="text-sm text-accent font-medium">
-              🔒 Security Notice: Marks and Aadhar number will be cryptographically hashed and stored on the blockchain for verification while maintaining privacy of sensitive data.
+              🔒 Security Notice: Learner name and marks/score will be cryptographically hashed and stored on the blockchain for verification while maintaining privacy of sensitive data.
             </p>
           </div>
         </div>

@@ -126,8 +126,9 @@ export default function Issue() {
   const [formData, setFormData] = useState({
     learnerWallet: "",
     learnerId: "",
+    learnerName: "",
     marks: "",
-    templateId: "", 
+    templateId: "",
     issueDate: "",
     expiryDate: "",
   });
@@ -207,6 +208,7 @@ export default function Issue() {
     setFormData({
       learnerWallet: "",
       learnerId: "",
+      learnerName: "",
       marks: "",
       templateId: "",
       issueDate: "",
@@ -257,10 +259,10 @@ export default function Issue() {
     }
 
     // Validate required fields
-    if (!formData.learnerWallet || !formData.learnerId || !formData.templateId || !formData.marks || !formData.issueDate) {
+    if (!formData.learnerWallet || !formData.learnerId || !formData.learnerName || !formData.templateId || !formData.marks || !formData.issueDate) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields: Learner Wallet, Learner ID, Template, Marks, and Issue Date",
+        description: "Please fill in all required fields: Learner Wallet, Learner ID, Learner Name, Template, Marks, and Issue Date",
         variant: "destructive",
       });
       return;
@@ -298,11 +300,18 @@ export default function Issue() {
       const active = await blockchainService.isTemplateActive(templateIdNum);
       if (!active) throw new Error('Selected template is not active');
 
-      // Create certificate data hash combining only marks
+      // Create certificate data hash combining learner name, marks (cert ID will be added after issuance)
       const certificateData = {
+        learnerName: formData.learnerName,
         marks: formData.marks
       };
       const dataHash = blockchainService.createHash(JSON.stringify(certificateData));
+      
+      console.log('=== ISSUE CERTIFICATE DEBUG ===');
+      console.log('Certificate data being hashed:', certificateData);
+      console.log('JSON string being hashed:', JSON.stringify(certificateData));
+      console.log('Generated hash:', dataHash);
+      console.log('=== END ISSUE DEBUG ===');
 
       // Calculate valid until timestamp
       let validUntilTimestamp = 0; // 0 means lifetime
@@ -329,7 +338,20 @@ export default function Issue() {
 
       if (result.success) {
         // Certificate was issued successfully, even if we couldn't parse the certId
-        setGeneratedCertId(result.certId ? result.certId.toString() : 'Generated');
+        const certId = result.certId ? result.certId.toString() : 'Generated';
+        setGeneratedCertId(certId);
+        
+        // Now create the final hash with the actual certificate ID
+        const finalCertificateData = {
+          learnerName: formData.learnerName,
+          certificateId: certId,
+          marks: formData.marks
+        };
+        const finalDataHash = blockchainService.createHash(JSON.stringify(finalCertificateData));
+        
+        console.log('Final certificate data with cert ID:', finalCertificateData);
+        console.log('Final hash with cert ID:', finalDataHash);
+        
         setIsSubmitted(true);
         
         toast({
@@ -465,6 +487,25 @@ export default function Issue() {
                             </p>
                           </div>
                         </div>
+                        
+                        <div className="grid md:grid-cols-1 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="learnerName">
+                              Learner Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="learnerName"
+                              placeholder="Enter learner's full name"
+                              value={formData.learnerName}
+                              onChange={(e) => setFormData({ ...formData, learnerName: e.target.value })}
+                              className="bg-background/50"
+                              disabled={!isAuthorized}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Full name of the learner receiving the certificate.
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Assessment Data (to be hashed) */}
@@ -479,14 +520,14 @@ export default function Issue() {
                             </Label>
                             <Input
                               id="marks"
-                              placeholder="e.g., A+, 98%, Pass, etc."
+                              placeholder="e.g., 98%, 85/100, A+, Pass, etc."
                               value={formData.marks}
                               onChange={(e) => setFormData({ ...formData, marks: e.target.value })}
                               className="bg-background/50"
                               disabled={!isAuthorized}
                             />
                             <p className="text-xs text-muted-foreground">
-                              Marks will be hashed for privacy and security.
+                              Marks/score will be hashed along with name and cert ID.
                             </p>
                           </div>
                         </div>
@@ -498,7 +539,7 @@ export default function Issue() {
                           <div>
                             <h4 className="font-semibold text-accent text-sm">Privacy Protection</h4>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Marks will be cryptographically hashed on the blockchain. Only the hash will be stored for verification purposes.
+                              Learner name and marks/score will be cryptographically hashed and stored on the blockchain. Only the hash will be stored for verification purposes.
                             </p>
                           </div>
                         </div>
@@ -657,8 +698,8 @@ export default function Issue() {
         onClose={() => setShowPreview(false)}
         certificateData={{
           learnerId: formData.learnerId,
-          learnerName: "N/A", // No name field
-          marks: "🔒 ***HASHED***", // Don't show actual marks in preview
+          learnerName: formData.learnerName || "N/A",
+          marks: formData.marks || "🔒 ***HASHED***",
           templateId: formData.templateId,
           templateName: selectedTemplate?.name,
           templateDescription: selectedTemplate?.description,

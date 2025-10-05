@@ -72,9 +72,15 @@ export const Hero = () => {
               variant="outline" 
               size="lg" 
               className="text-lg px-8 py-6 h-auto border-accent/30 hover:border-accent hover:bg-accent/5"
-              onClick={() => navigate('/issue')}
+              onClick={() => {
+                // Scroll to the next section (TrustArchitecture)
+                const nextSection = document.querySelector('.trust-architecture-section');
+                if (nextSection) {
+                  nextSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             >
-              Issue Certificate
+              Load More
             </Button>
           </div>
 
