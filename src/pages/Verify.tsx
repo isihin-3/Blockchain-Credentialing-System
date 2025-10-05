@@ -91,7 +91,7 @@ export default function Verify() {
     }
   };
 
-  const handleVerify = async (idOverride?: string) => {
+  const handleVerify = async (idOverride?: string, isQRScan: boolean = false) => {
     const idValue = (idOverride ?? certificateId).trim();
     if (!idValue) {
       toast({
@@ -102,11 +102,11 @@ export default function Verify() {
       return;
     }
 
-    // Validate required fields for new verification approach
-    if (!learnerName || !marks) {
+    // Only validate learner name and marks for manual verification, not QR scan
+    if (!isQRScan && (!learnerName || !marks)) {
       toast({
         title: "Missing Information",
-        description: "Please enter Learner Name and Marks/Score for verification",
+        description: "Please enter Learner Name and Marks/Score for manual verification",
         variant: "destructive",
       });
       return;
@@ -121,29 +121,35 @@ export default function Verify() {
       console.log('Certificate data from blockchain:', cert);
       
       if (cert.exists) {
-        // Calculate hash from provided data (learner name, marks) - matching the stored hash structure
-        const verificationData = {
-          learnerName: learnerName,
-          marks: marks
-        };
-        const calculatedHash = blockchainService.createHash(JSON.stringify(verificationData));
+        let hashMatches = true; // Default to true for QR scan
         
-        console.log('=== VERIFICATION DEBUG ===');
-        console.log('Input data:', { certificateId: idValue, learnerName, marks });
-        console.log('Verification data being hashed:', verificationData);
-        console.log('JSON string being hashed:', JSON.stringify(verificationData));
-        console.log('Calculated hash:', calculatedHash);
-        console.log('Stored hash from blockchain:', cert.dataHash);
-        console.log('Hash match:', calculatedHash === cert.dataHash);
-        
-        // Test hash function with known data
-        const testData = { learnerName: "test", marks: "100" };
-        const testHash = blockchainService.createHash(JSON.stringify(testData));
-        console.log('Test hash for {learnerName: "test", marks: "100"}:', testHash);
-        console.log('=== END DEBUG ===');
-        
-        // Compare with stored hash
-        const hashMatches = calculatedHash === cert.dataHash;
+        // Only perform hash verification for manual verification (not QR scan)
+        if (!isQRScan && learnerName && marks) {
+          // Calculate hash from provided data (learner name, marks) - matching the stored hash structure
+          const verificationData = {
+            learnerName: learnerName,
+            marks: marks
+          };
+          const calculatedHash = blockchainService.createHash(JSON.stringify(verificationData));
+          
+          console.log('=== MANUAL VERIFICATION DEBUG ===');
+          console.log('Input data:', { certificateId: idValue, learnerName, marks });
+          console.log('Verification data being hashed:', verificationData);
+          console.log('JSON string being hashed:', JSON.stringify(verificationData));
+          console.log('Calculated hash:', calculatedHash);
+          console.log('Stored hash from blockchain:', cert.dataHash);
+          console.log('Hash match:', calculatedHash === cert.dataHash);
+          console.log('=== END MANUAL VERIFICATION DEBUG ===');
+          
+          // Compare with stored hash
+          hashMatches = calculatedHash === cert.dataHash;
+        } else if (isQRScan) {
+          console.log('=== QR SCAN VERIFICATION ===');
+          console.log('QR scan verification - no hash validation required');
+          console.log('Certificate ID:', idValue);
+          console.log('Certificate exists:', cert.exists);
+          console.log('=== END QR SCAN VERIFICATION ===');
+        }
         
         if (hashMatches) {
           const result = {
@@ -255,11 +261,11 @@ export default function Verify() {
             const url = new URL(decodedText, window.location.origin);
             const id = url.searchParams.get('certId') || decodedText;
             setCertificateId(id);
-            handleVerify(id);
+            handleVerify(id, true); // Pass isQRScan: true
             // Don't open new tab - just verify in current tab
           } catch (_) {
             setCertificateId(decodedText);
-            handleVerify(decodedText);
+            handleVerify(decodedText, true); // Pass isQRScan: true
           }
         },
         () => {}
@@ -373,7 +379,7 @@ export default function Verify() {
                       className="w-full"
                       onClick={() => {
                         console.log('Button clicked - Form values:', { certificateId, learnerName, marks });
-                        handleVerify();
+                        handleVerify(undefined, false); // Pass isQRScan: false for manual verification
                       }}
                       disabled={isLoading || !certificateId || !learnerName || !marks}
                     >
