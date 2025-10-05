@@ -434,6 +434,91 @@ class BlockchainService {
     }
   }
 
+  async getAllInstitutes(): Promise<{ success: boolean; institutes?: any[]; error?: string }> {
+    try {
+      if (!this.state.contracts.certAgency) throw new Error('Not connected to blockchain');
+
+      const institutes = [];
+      const timeout = 8000; // 8 second timeout
+      const startTime = Date.now();
+      
+      console.log('Starting optimized institute fetching...');
+      
+      // First, try to get institutes from events (faster approach)
+      try {
+        const filter = this.state.contracts.certAgency.filters.InstituteAdded();
+        const events = await this.state.contracts.certAgency.queryFilter(filter);
+        
+        console.log(`Found ${events.length} institute events`);
+        
+        // Process events to get institute data
+        for (const event of events) {
+          if (Date.now() - startTime > timeout) {
+            console.log('Timeout reached during event processing');
+            break;
+          }
+          
+          try {
+            const instituteId = event.args?.id?.toString();
+            if (instituteId) {
+              const institute = await this.state.contracts.certAgency.institutes(instituteId);
+              
+              if (institute && institute.id.toString() !== '0') {
+                institutes.push({
+                  id: institute.id.toString(),
+                  name: institute.name,
+                  wallet: institute.wallet,
+                  active: institute.active,
+                  uniqueId: institute.id.toString(),
+                });
+              }
+            }
+          } catch (error) {
+            console.log(`Error processing institute ${event.args?.id}:`, error);
+          }
+        }
+        
+        if (institutes.length > 0) {
+          console.log(`Found ${institutes.length} institutes from events in ${Date.now() - startTime}ms`);
+          return { success: true, institutes };
+        }
+      } catch (error) {
+        console.log('Event-based fetching failed, falling back to direct method:', error);
+      }
+      
+      // Fallback: Direct method with limited range
+      console.log('Using fallback direct method...');
+      let instituteId = 1;
+      const maxAttempts = 20; // Only check first 20 institutes
+      
+      while (instituteId <= maxAttempts && Date.now() - startTime < timeout) {
+        try {
+          const institute = await this.state.contracts.certAgency.institutes(instituteId);
+          
+          if (institute && institute.id.toString() !== '0' && institute.id.toString() === instituteId.toString()) {
+            institutes.push({
+              id: institute.id.toString(),
+              name: institute.name,
+              wallet: institute.wallet,
+              active: institute.active,
+              uniqueId: institute.id.toString(),
+            });
+          }
+          instituteId++;
+        } catch (error) {
+          // If we get an error, this ID doesn't exist
+          break;
+        }
+      }
+
+      console.log(`Found ${institutes.length} institutes in ${Date.now() - startTime}ms`);
+      return { success: true, institutes };
+    } catch (error: any) {
+      console.error('Error fetching institutes:', error);
+      return { success: false, error: error.reason || error.message };
+    }
+  }
+
   // Institute functions
   async addStaff(name: string, walletAddress: string): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
@@ -763,6 +848,20 @@ class BlockchainService {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   }
 
+  // Generate a unique ID for local state management
+  generateInstituteId(name: string, existingIds: string[]): string {
+    const baseId = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let counter = 1;
+    let uniqueId = baseId;
+    
+    while (existingIds.includes(uniqueId)) {
+      uniqueId = `${baseId}_${counter}`;
+      counter++;
+    }
+    
+    return uniqueId;
+  }
+
   // Note: ID generation functions removed - now using actual blockchain IDs
 
   // ------- Helpers for IDs -------
@@ -804,6 +903,25 @@ class BlockchainService {
       };
     } catch (error) {
       console.error('Error reading institute details:', error);
+      return null;
+    }
+  }
+
+  async getStaffDetails(staffId: number): Promise<{ id: number; name: string; wallet: string; instituteId: number; active: boolean } | null> {
+    try {
+      if (!this.state.contracts.certifier) throw new Error('Not connected to blockchain');
+      const staff = await this.state.contracts.certifier.staffMembers(staffId);
+      const id = Number(staff.id?.toString?.() ?? staff.id);
+      if (!id) return null;
+      return {
+        id,
+        name: String(staff.name),
+        wallet: String(staff.wallet),
+        instituteId: Number(staff.instituteId?.toString?.() ?? staff.instituteId),
+        active: Boolean(staff.active)
+      };
+    } catch (error) {
+      console.error('Error reading staff details:', error);
       return null;
     }
   }
@@ -866,7 +984,7 @@ class BlockchainService {
     walletAddress: string,
     fromBlock = 0,
     toBlock?: number
-  ): Promise<Array<{ certId: number; templateId: number; templateName?: string; instituteId?: number; instituteName?: string; issuedAt: number; validUntil?: number; revoked: boolean; txHash: string }>> {
+  ): Promise<Array<{ certId: number; templateId: number; templateName?: string; instituteId?: number; instituteName?: string; learnerName?: string; issuedAt: number; validUntil?: number; revoked: boolean; txHash: string }>> {
     if (!this.state.provider) this.ensureReadContracts();
     if (!this.state.provider) throw new Error('Not connected to provider');
     const learnerId = await this.getLearnerIdByWallet(walletAddress);
@@ -885,7 +1003,7 @@ class BlockchainService {
     const matches = logs
       .map((l) => ({ parsed: iface.parseLog(l), log: l }))
       .filter((d: any) => Number(d.parsed.args.learnerId.toString()) === learnerId);
-    const results: Array<{ certId: number; templateId: number; templateName?: string; instituteId?: number; instituteName?: string; issuedAt: number; validUntil?: number; revoked: boolean; txHash: string }> = [];
+    const results: Array<{ certId: number; templateId: number; templateName?: string; instituteId?: number; instituteName?: string; learnerName?: string; issuedAt: number; validUntil?: number; revoked: boolean; txHash: string }> = [];
     for (const item of matches) {
       const block = await this.state.provider!.getBlock(item.log.blockNumber);
       // also read revoked flag from contract storage
@@ -911,12 +1029,17 @@ class BlockchainService {
           instituteName = inst?.name;
         }
       } catch (_) {}
+      // For now, we'll show a generic learner name since we can't reverse the hash
+      // In a future implementation, learner names could be stored separately
+      let learnerName = 'Certificate Holder';
+
       results.push({
         certId: Number(item.parsed.args.certId.toString()),
         templateId: Number(item.parsed.args.templateId.toString()),
         templateName,
         instituteId,
         instituteName,
+        learnerName,
         issuedAt: Number(block.timestamp),
         validUntil,
         revoked,

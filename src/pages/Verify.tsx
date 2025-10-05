@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Search, CheckCircle2, XCircle, Upload, Loader2 } from "lucide-react";
+import { QrCode, Search, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
@@ -14,11 +14,82 @@ import blockchainService from "@/lib/blockchain";
 export default function Verify() {
   const { toast } = useToast();
   const [certificateId, setCertificateId] = useState("");
+  const [learnerName, setLearnerName] = useState("");
   const [marks, setMarks] = useState("");
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const scannerRef = useRef<HTMLDivElement | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [fetchedDetails, setFetchedDetails] = useState<{
+    instituteName?: string;
+    templateName?: string;
+    staffName?: string;
+  }>({});
+
+  // Function to fetch additional details for verification result
+  const fetchVerificationDetails = async (result: any) => {
+    if (!result || (!result.instituteId && !result.templateId && !result.staffId)) return;
+    
+    setDetailsLoading(true);
+    setFetchedDetails({});
+    
+    try {
+      const promises = [];
+      
+      // Fetch institute details
+      if (result.instituteId) {
+        promises.push(
+          blockchainService.getInstituteDetails(parseInt(result.instituteId))
+            .then(details => ({ type: 'institute', data: details }))
+            .catch(() => ({ type: 'institute', data: null }))
+        );
+      }
+      
+      // Fetch template details
+      if (result.templateId) {
+        promises.push(
+          blockchainService.getTemplateDetails(parseInt(result.templateId))
+            .then(details => ({ type: 'template', data: details }))
+            .catch(() => ({ type: 'template', data: null }))
+        );
+      }
+      
+      // Fetch staff details
+      if (result.staffId) {
+        promises.push(
+          blockchainService.getStaffDetails(parseInt(result.staffId))
+            .then(details => ({ type: 'staff', data: details }))
+            .catch(() => ({ type: 'staff', data: null }))
+        );
+      }
+      
+      const results = await Promise.all(promises);
+      
+      const newDetails: any = {};
+      results.forEach(({ type, data }) => {
+        if (data) {
+          switch (type) {
+            case 'institute':
+              newDetails.instituteName = data.name;
+              break;
+            case 'template':
+              newDetails.templateName = data.name;
+              break;
+            case 'staff':
+              newDetails.staffName = data.name;
+              break;
+          }
+        }
+      });
+      
+      setFetchedDetails(newDetails);
+    } catch (error) {
+      console.error('Error fetching verification details:', error);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   const handleVerify = async (idOverride?: string) => {
     const idValue = (idOverride ?? certificateId).trim();
@@ -31,29 +102,88 @@ export default function Verify() {
       return;
     }
 
+    // Validate required fields for new verification approach
+    if (!learnerName || !marks) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter Learner Name and Marks/Score for verification",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+    setFetchedDetails({});
+    setVerificationResult(null);
     try {
-      // First, treat existence on-chain as verification success
+      // Get certificate data from blockchain
       const cert = await blockchainService.getCertificateData(parseInt(idValue, 10));
+      console.log('Certificate data from blockchain:', cert);
+      
       if (cert.exists) {
-        setVerificationResult({
-          status: cert.revoked ? "revoked" : "authentic",
-          certificateId: idValue,
-          learnerId: String(cert.learnerId ?? ''),
-          templateId: String(cert.templateId ?? ''),
-          staffId: String(cert.staffId ?? ''),
-          instituteId: String(cert.instituteId ?? ''),
-          issuedAt: cert.issuedAt && cert.issuedAt > 0 ? new Date(cert.issuedAt * 1000).toLocaleDateString() : 'Unknown',
-          validUntil: !cert.validUntil || cert.validUntil === 0 ? 'Lifetime' : new Date((cert.validUntil as number) * 1000).toLocaleDateString(),
-          dataHash: cert.dataHash,
-          grade: marks || "Not provided",
-        });
-        toast({
-          title: cert.revoked ? "Certificate Revoked" : "Certificate Verified! ✅",
-          description: cert.revoked ? "This certificate has been revoked" : "Certificate exists on-chain",
-          variant: cert.revoked ? "destructive" : "default",
-        });
-        return;
+        // Calculate hash from provided data (learner name, marks) - matching the stored hash structure
+        const verificationData = {
+          learnerName: learnerName,
+          marks: marks
+        };
+        const calculatedHash = blockchainService.createHash(JSON.stringify(verificationData));
+        
+        console.log('=== VERIFICATION DEBUG ===');
+        console.log('Input data:', { certificateId: idValue, learnerName, marks });
+        console.log('Verification data being hashed:', verificationData);
+        console.log('JSON string being hashed:', JSON.stringify(verificationData));
+        console.log('Calculated hash:', calculatedHash);
+        console.log('Stored hash from blockchain:', cert.dataHash);
+        console.log('Hash match:', calculatedHash === cert.dataHash);
+        
+        // Test hash function with known data
+        const testData = { learnerName: "test", marks: "100" };
+        const testHash = blockchainService.createHash(JSON.stringify(testData));
+        console.log('Test hash for {learnerName: "test", marks: "100"}:', testHash);
+        console.log('=== END DEBUG ===');
+        
+        // Compare with stored hash
+        const hashMatches = calculatedHash === cert.dataHash;
+        
+        if (hashMatches) {
+          const result = {
+            status: cert.revoked ? "revoked" : "authentic",
+            certificateId: idValue,
+            learnerId: String(cert.learnerId ?? ''),
+            templateId: String(cert.templateId ?? ''),
+            staffId: String(cert.staffId ?? ''),
+            instituteId: String(cert.instituteId ?? ''),
+            issuedAt: cert.issuedAt && cert.issuedAt > 0 ? new Date(cert.issuedAt * 1000).toLocaleDateString() : 'Unknown',
+            validUntil: !cert.validUntil || cert.validUntil === 0 ? 'Lifetime' : new Date((cert.validUntil as number) * 1000).toLocaleDateString(),
+            dataHash: cert.dataHash,
+            marks: marks,
+            learnerName: learnerName,
+          };
+          setVerificationResult(result);
+          
+          // Fetch additional details
+          await fetchVerificationDetails(result);
+          
+          toast({
+            title: cert.revoked ? "Certificate Revoked" : "Certificate Verified! ✅",
+            description: cert.revoked ? "This certificate has been revoked" : "Certificate verified successfully",
+            variant: cert.revoked ? "destructive" : "default",
+          });
+          return;
+        } else {
+          // Hash doesn't match - certificate is invalid
+          setVerificationResult({ 
+            status: "invalid", 
+            certificateId: idValue, 
+            error: "Certificate data does not match. Please verify the learner name and marks/score." 
+          });
+          toast({ 
+            title: "Verification Failed", 
+            description: "Certificate data does not match. Please check the provided information.", 
+            variant: "destructive" 
+          });
+          return;
+        }
       }
 
       // Fallback to strict verification function when existence check fails
@@ -62,7 +192,7 @@ export default function Verify() {
       const result = await blockchainService.verifyCertificate(parseInt(idValue), idHash, detailsHash);
       if (result.success && result.isValid && result.certificateData) {
         const certData = result.certificateData;
-        setVerificationResult({
+        const verificationResult = {
           status: certData.revoked ? "revoked" : "authentic",
           certificateId: idValue,
           learnerId: certData.learnerId.toString(),
@@ -73,7 +203,12 @@ export default function Verify() {
           validUntil: certData.validUntil.toNumber() === 0 ? "Lifetime" : new Date(certData.validUntil.toNumber() * 1000).toLocaleDateString(),
           dataHash: certData.dataHash,
           grade: marks || "Not provided",
-        });
+        };
+        setVerificationResult(verificationResult);
+        
+        // Fetch additional details
+        await fetchVerificationDetails(verificationResult);
+        
         toast({ title: "Certificate Verified! ✅", description: "Certificate is authentic and valid" });
       } else {
         setVerificationResult({ status: "invalid", certificateId: idValue, error: "Certificate not found or verification failed" });
@@ -121,10 +256,7 @@ export default function Verify() {
             const id = url.searchParams.get('certId') || decodedText;
             setCertificateId(id);
             handleVerify(id);
-            // Also open backend link if full URL
-            if (/^https?:/i.test(decodedText)) {
-              window.open(decodedText, '_blank');
-            }
+            // Don't open new tab - just verify in current tab
           } catch (_) {
             setCertificateId(decodedText);
             handleVerify(decodedText);
@@ -181,40 +313,69 @@ export default function Verify() {
                       </div>
                     )}
                     <div ref={scannerRef} className="w-full flex items-center justify-center" />
-                    <Button variant="neon" size="lg" onClick={handleQRScan} disabled={isScanning}>
-                      {isScanning ? 'Scanning...' : 'Start QR Scan'}
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button variant="neon" size="lg" onClick={handleQRScan} disabled={isScanning}>
+                        {isScanning ? 'Scanning...' : 'Start QR Scan'}
+                      </Button>
+                      {isScanning && (
+                        <Button variant="outline" size="lg" onClick={() => setIsScanning(false)}>
+                          Stop Scan
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="manual" className="space-y-6">
                   <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="certId">Certificate ID <span className="text-destructive">*</span></Label>
+          <Input
+            id="certId"
+            placeholder="Enter certificate ID (e.g., 123)"
+            value={certificateId}
+            onChange={(e) => setCertificateId(e.target.value)}
+            className="bg-background/50"
+          />
+          <p className="text-xs text-muted-foreground">
+            Enter the certificate ID from the blockchain
+          </p>
+        </div>
                     <div className="space-y-2">
-                      <Label htmlFor="certId">Certificate ID</Label>
+                      <Label htmlFor="learnerName">Learner Name <span className="text-destructive">*</span></Label>
                       <Input
-                        id="certId"
-                        placeholder="Enter certificate ID (e.g., CERT-2024-001234)"
-                        value={certificateId}
-                        onChange={(e) => setCertificateId(e.target.value)}
+                        id="learnerName"
+                        placeholder="Enter learner's full name"
+                        value={learnerName}
+                        onChange={(e) => setLearnerName(e.target.value)}
                         className="bg-background/50"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the exact name as it appears on the certificate
+                      </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="marks">Marks/Grade</Label>
+                      <Label htmlFor="marks">Marks/Score <span className="text-destructive">*</span></Label>
                       <Input
                         id="marks"
-                        placeholder="Enter marks or grade"
+                        placeholder="Enter marks/score (e.g., 98%, A+, 85/100, Pass, etc.)"
                         value={marks}
                         onChange={(e) => setMarks(e.target.value)}
                         className="bg-background/50"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the exact marks/score as it appears on the certificate
+                      </p>
                     </div>
                     <Button 
                       variant="hero" 
                       size="lg" 
                       className="w-full"
-                      onClick={handleVerify}
-                      disabled={isLoading || !certificateId}
+                      onClick={() => {
+                        console.log('Button clicked - Form values:', { certificateId, learnerName, marks });
+                        handleVerify();
+                      }}
+                      disabled={isLoading || !certificateId || !learnerName || !marks}
                     >
                       {isLoading ? (
                         <>
@@ -225,15 +386,23 @@ export default function Verify() {
                         'Verify Certificate'
                       )}
                     </Button>
+                    {(!certificateId || !learnerName || !marks) && (
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Please fill in all required fields to enable verification
+                      </p>
+                    )}
+                    <div className="text-xs text-muted-foreground text-center mt-2 p-2 bg-muted/20 rounded">
+                      Debug: CertID={certificateId || 'empty'}, Name={learnerName || 'empty'}, Marks={marks || 'empty'}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
 
               {/* Verification Result */}
               {verificationResult && (
-                <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                  <div className="border-t border-border/50 pt-6">
-                    <div className="flex items-center justify-between mb-6">
+                <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="border-t border-border/50 pt-4">
+                    <div className="flex items-center justify-between mb-4">
                       <h3 className="font-heading text-xl font-semibold">Verification Result</h3>
                       <Badge 
                         variant={verificationResult.status === "authentic" ? "default" : "destructive"}
@@ -251,28 +420,80 @@ export default function Verify() {
                     </div>
 
                     <Card className="bg-background/50 border-accent/20">
-                      <CardContent className="p-6 space-y-4">
+                      <CardContent className="p-4 space-y-3">
                         {verificationResult.status === "authentic" || verificationResult.status === "revoked" ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                               <Label className="text-muted-foreground">Certificate ID</Label>
-                              <p className="font-semibold font-mono text-sm">{verificationResult.certificateId}</p>
+                              <p className="font-semibold font-mono text-lg text-accent">{verificationResult.certificateId}</p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">Learner Name</Label>
+                              <p className="font-semibold">{verificationResult.learnerName || "Not provided"}</p>
                             </div>
                             <div>
                               <Label className="text-muted-foreground">Learner ID</Label>
                               <p className="font-semibold">{verificationResult.learnerId}</p>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Template ID</Label>
-                              <p className="font-semibold">{verificationResult.templateId}</p>
+                              <Label className="text-muted-foreground">Template</Label>
+                              <div className="space-y-1">
+                                <p className="font-semibold">
+                                  {detailsLoading ? (
+                                    <span className="flex items-center gap-2">
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      Loading...
+                                    </span>
+                                  ) : fetchedDetails.templateName ? (
+                                    fetchedDetails.templateName
+                                  ) : (
+                                    `ID: ${verificationResult.templateId}`
+                                  )}
+                                </p>
+                                {fetchedDetails.templateName && (
+                                  <p className="text-xs text-muted-foreground">ID: {verificationResult.templateId}</p>
+                                )}
+                              </div>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Staff ID</Label>
-                              <p className="font-semibold">{verificationResult.staffId}</p>
+                              <Label className="text-muted-foreground">Staff</Label>
+                              <div className="space-y-1">
+                                <p className="font-semibold">
+                                  {detailsLoading ? (
+                                    <span className="flex items-center gap-2">
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      Loading...
+                                    </span>
+                                  ) : fetchedDetails.staffName ? (
+                                    fetchedDetails.staffName
+                                  ) : (
+                                    `ID: ${verificationResult.staffId}`
+                                  )}
+                                </p>
+                                {fetchedDetails.staffName && (
+                                  <p className="text-xs text-muted-foreground">ID: {verificationResult.staffId}</p>
+                                )}
+                              </div>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Institute ID</Label>
-                              <p className="font-semibold">{verificationResult.instituteId}</p>
+                              <Label className="text-muted-foreground">Institute</Label>
+                              <div className="space-y-1">
+                                <p className="font-semibold">
+                                  {detailsLoading ? (
+                                    <span className="flex items-center gap-2">
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      Loading...
+                                    </span>
+                                  ) : fetchedDetails.instituteName ? (
+                                    fetchedDetails.instituteName
+                                  ) : (
+                                    `ID: ${verificationResult.instituteId}`
+                                  )}
+                                </p>
+                                {fetchedDetails.instituteName && (
+                                  <p className="text-xs text-muted-foreground">ID: {verificationResult.instituteId}</p>
+                                )}
+                              </div>
                             </div>
                             <div>
                               <Label className="text-muted-foreground">Issue Date</Label>
@@ -283,8 +504,8 @@ export default function Verify() {
                               <p className="font-semibold">{verificationResult.validUntil}</p>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Grade/Marks</Label>
-                              <p className="font-semibold text-accent">{verificationResult.grade}</p>
+                              <Label className="text-muted-foreground">Marks/Score</Label>
+                              <p className="font-semibold text-accent">{verificationResult.marks}</p>
                             </div>
                             <div className="md:col-span-2">
                               <Label className="text-muted-foreground">Data Hash</Label>
@@ -301,14 +522,26 @@ export default function Verify() {
                           </div>
                         )}
 
-                        <div className="pt-4 border-t border-border/50">
-                          <Button variant="outline" className="w-full gap-2 border-accent/30 hover:border-accent">
-                            <Upload className="h-4 w-4" />
-                            Verify Marksheet Hash
-                          </Button>
-                        </div>
                       </CardContent>
                     </Card>
+                    
+                    {/* Scan Another Button */}
+                    <div className="flex justify-center pt-2">
+                      <Button 
+                        variant="outline" 
+                      onClick={() => {
+                        setVerificationResult(null);
+                        setCertificateId("");
+                        setLearnerName("");
+                        setMarks("");
+                        setFetchedDetails({});
+                      }}
+                        className="gap-2"
+                      >
+                        <QrCode className="h-4 w-4" />
+                        Scan Another Certificate
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}

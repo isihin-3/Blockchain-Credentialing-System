@@ -13,7 +13,7 @@ export default function Certificates() {
   const { address } = useBlockchain();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [certificates, setCertificates] = useState<Array<{ id: number; templateId: number; templateName?: string; instituteName?: string; issuedAt: number; validUntil?: number; revoked: boolean; txHash: string }>>([]);
+  const [certificates, setCertificates] = useState<Array<{ id: number; templateId: number; templateName?: string; instituteName?: string; learnerName?: string; issuedAt: number; validUntil?: number; revoked: boolean; txHash: string }>>([]);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [qrDataUrls, setQrDataUrls] = useState<Record<string, string>>({});
 
@@ -139,7 +139,10 @@ export default function Certificates() {
                     >
                       {cert.revoked ? 'revoked' : 'active'}
                     </Badge>
-                    <span className="text-xs text-muted-foreground font-mono">#{cert.id}</span>
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground">Cert ID</div>
+                      <div className="font-mono text-sm font-bold text-accent">#{cert.id}</div>
+                    </div>
                   </div>
                   {cert.templateName ? (
                     <CardTitle className="font-heading text-lg leading-tight group-hover:text-accent transition-colors">
@@ -153,6 +156,7 @@ export default function Certificates() {
                     <div className="text-center">
                       <h3 className="font-heading text-xl font-bold">{cert.templateName || ''}</h3>
                       <p className="text-muted-foreground">{cert.instituteName || 'Unknown Institute'}</p>
+                      <p className="text-lg font-semibold text-accent mt-2">{cert.learnerName || 'Certificate Holder'}</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex items-center justify-between">
@@ -164,8 +168,8 @@ export default function Certificates() {
                         <span className="font-medium">{cert.validUntil && cert.validUntil > 0 ? new Date(cert.validUntil * 1000).toLocaleDateString() : 'Lifetime'}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Unique ID</span>
-                        <span className="font-mono text-xs">#{cert.id}</span>
+                        <span className="text-muted-foreground">Certificate ID</span>
+                        <span className="font-mono text-sm font-bold text-accent">#{cert.id}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Institute</span>
