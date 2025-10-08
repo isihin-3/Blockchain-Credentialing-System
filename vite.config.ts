@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     // Force clear cache and reload
     force: true,
+    https: mode === "production",
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
@@ -21,6 +22,7 @@ export default defineConfig(({ mode }) => ({
   preview: {
     port: 8080,
     strictPort: true,
+    https: true,
   },
   // Clear cache on build
   build: {
@@ -29,5 +31,13 @@ export default defineConfig(({ mode }) => ({
         manualChunks: undefined,
       },
     },
+    // Ensure proper handling of dynamic imports
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
+  },
+  // Define global constants
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
 }));

@@ -7,6 +7,11 @@ declare global {
   }
 }
 
+// Utility function to check if running in secure context (HTTPS)
+const isSecureContext = () => {
+  return window.isSecureContext || window.location.protocol === 'https:';
+};
+
 // Contract addresses from the backend
 const CONTRACT_ADDRESSES = {
   certAgency: "0x18F3040088d9933C55722474daFfd273E1d562dD",
@@ -843,6 +848,10 @@ class BlockchainService {
     return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(data));
   }
 
+  // Check if running in secure context (required for camera access)
+  isSecureContext(): boolean {
+    return isSecureContext();
+  }
 
   formatAddress(address: string): string {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
