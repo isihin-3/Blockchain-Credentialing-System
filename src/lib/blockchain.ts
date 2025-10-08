@@ -21,6 +21,9 @@ const CONTRACT_ADDRESSES = {
   certificates: "0xb2E8d5D2ED3c0C30AdB6A6062f93A1fB91078e7f"
 };
 
+// RPC URL from environment variables
+const RPC_URL = (import.meta as any)?.env?.VITE_RPC_URL || '';
+
 // Optional admin override via env var
 const ADMIN_ADDRESS = (import.meta as any)?.env?.VITE_ADMIN_ADDRESS
   ? String((import.meta as any).env.VITE_ADMIN_ADDRESS).toLowerCase()
@@ -295,8 +298,12 @@ class BlockchainService {
       if (!this.state.provider) {
         if (typeof (window as any)?.ethereum !== 'undefined') {
           this.state.provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        } else if (RPC_URL) {
+          // Use configured RPC URL for read-only operations
+          this.state.provider = new ethers.providers.JsonRpcProvider(RPC_URL);
         } else {
-          // Fallback to default provider (may require network config in real world)
+          // Fallback to default provider (may not work in production)
+          console.warn('No RPC URL configured and no MetaMask detected. Using default provider which may not work in production.');
           this.state.provider = (ethers.getDefaultProvider() as unknown) as ethers.providers.Web3Provider;
         }
       }
@@ -851,6 +858,35 @@ class BlockchainService {
   // Check if running in secure context (required for camera access)
   isSecureContext(): boolean {
     return isSecureContext();
+  }
+
+  // Test blockchain connectivity
+  async testConnectivity(): Promise<{ connected: boolean; error?: string; networkInfo?: any }> {
+    try {
+      this.ensureReadContracts();
+      if (!this.state.provider) {
+        return { connected: false, error: 'No provider available' };
+      }
+
+      // Test basic connectivity
+      const network = await this.state.provider.getNetwork();
+      const blockNumber = await this.state.provider.getBlockNumber();
+      
+      return { 
+        connected: true, 
+        networkInfo: {
+          name: network.name,
+          chainId: network.chainId,
+          blockNumber: blockNumber
+        }
+      };
+    } catch (error: any) {
+      console.error('Blockchain connectivity test failed:', error);
+      return { 
+        connected: false, 
+        error: error.message || 'Failed to connect to blockchain'
+      };
+    }
   }
 
   formatAddress(address: string): string {

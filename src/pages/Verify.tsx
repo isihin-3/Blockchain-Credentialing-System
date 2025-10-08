@@ -143,6 +143,20 @@ export default function Verify() {
     setFetchedDetails({});
     setVerificationResult(null);
     try {
+      console.log('=== VERIFICATION START ===');
+      console.log('Certificate ID:', idValue);
+      console.log('Is QR Scan:', isQRScan);
+      console.log('Learner Name:', learnerName);
+      console.log('Marks:', marks);
+      
+      // Test blockchain connectivity first
+      const connectivity = await blockchainService.testConnectivity();
+      console.log('Blockchain connectivity:', connectivity);
+      
+      if (!connectivity.connected) {
+        throw new Error(`Blockchain connection failed: ${connectivity.error}`);
+      }
+      
       // Get certificate data from blockchain
       const cert = await blockchainService.getCertificateData(parseInt(idValue, 10));
       console.log('Certificate data from blockchain:', cert);

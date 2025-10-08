@@ -26,11 +26,12 @@ This guide will help you deploy the Blockchain Credentialing System to Vercel wi
 Create a `.env.local` file in your project root with the following variables:
 
 ```bash
-# Blockchain Configuration
+# Blockchain Configuration (CRITICAL - REQUIRED FOR VERIFICATION TO WORK)
 VITE_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
 # Or use alternative RPC URLs:
 # VITE_RPC_URL=https://polygon-mumbai.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
 # VITE_RPC_URL=https://rpc.ankr.com/polygon_mumbai
+# VITE_RPC_URL=https://polygon-mumbai.infura.io/v3/YOUR_INFURA_PROJECT_ID
 
 # Contract Addresses (update these with your deployed contract addresses)
 VITE_CERT_AGENCY_ADDRESS=0x18F3040088d9933C55722474daFfd273E1d562dD
@@ -46,6 +47,8 @@ VITE_ADMIN_ADDRESS=
 VITE_APP_NAME=Ordinals Blockchain Credentialing System
 VITE_APP_URL=https://your-domain.vercel.app
 ```
+
+**⚠️ CRITICAL**: The `VITE_RPC_URL` is absolutely required for verification to work in production. Without it, the app cannot connect to the blockchain.
 
 ### 2. Vercel Environment Variables
 In your Vercel dashboard, add the same environment variables:
@@ -101,6 +104,16 @@ Vercel should automatically detect this as a Vite project, but verify these sett
 - ✅ Verify responsive design works correctly
 
 ## 🐛 Troubleshooting
+
+### Verification Not Working? (Most Common Issue)
+1. **Missing RPC URL**: Check browser console for "No RPC URL configured" warning
+   - Solution: Add `VITE_RPC_URL` environment variable in Vercel
+   - Get free RPC URL from Infura, Alchemy, or Ankr
+2. **Blockchain Connection Failed**: Check console for connectivity errors
+   - Solution: Verify RPC URL is correct and accessible
+   - Test RPC URL in browser: `curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' YOUR_RPC_URL`
+3. **Contract Addresses**: Ensure all contract addresses are correct
+4. **Network Mismatch**: Make sure you're using the correct network (Sepolia, Mumbai, etc.)
 
 ### Camera Still Not Working?
 1. **Check HTTPS**: Ensure your site is served over HTTPS
