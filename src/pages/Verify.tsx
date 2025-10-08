@@ -26,6 +26,33 @@ export default function Verify() {
     templateName?: string;
     staffName?: string;
   }>({});
+  const html5QrCodeRef = useRef<any>(null);
+
+  // Cleanup function to properly stop the camera
+  const stopCamera = async () => {
+    if (html5QrCodeRef.current && isScanning) {
+      try {
+        await html5QrCodeRef.current.stop();
+        await html5QrCodeRef.current.clear();
+        html5QrCodeRef.current = null;
+      } catch (error) {
+        console.warn('Error stopping camera:', error);
+      }
+    }
+    setIsScanning(false);
+    if (scannerRef.current) {
+      scannerRef.current.innerHTML = '';
+    }
+  };
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (html5QrCodeRef.current && isScanning) {
+        stopCamera();
+      }
+    };
+  }, []);
 
   // Function to fetch additional details for verification result
   const fetchVerificationDetails = async (result: any) => {
@@ -240,22 +267,43 @@ export default function Verify() {
 
   const handleQRScan = async () => {
     try {
+      // Check if running in secure context (HTTPS required for camera access)
+      if (!blockchainService.isSecureContext()) {
+        toast({
+          title: 'Secure Connection Required',
+          description: 'Camera access requires HTTPS. Please ensure you are using a secure connection (https://).',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { Html5Qrcode } = await import('html5-qrcode');
       const scannerId = 'qr-scanner';
       if (!scannerRef.current) return;
+      
+      // Clean up any existing scanner
+      await stopCamera();
+      
       const el = document.createElement('div');
       el.id = scannerId;
       el.className = 'w-full max-w-sm aspect-square rounded-lg overflow-hidden';
       scannerRef.current.innerHTML = '';
       scannerRef.current.appendChild(el);
       setIsScanning(true);
+      
       const html5QrCode = new Html5Qrcode(scannerId);
+      html5QrCodeRef.current = html5QrCode;
+      
       await html5QrCode.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: 250 },
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
         (decodedText: string) => {
           // Stop scanning on success
-          html5QrCode.stop().then(() => setIsScanning(false)).catch(() => setIsScanning(false));
+          stopCamera();
           // Expect link like /verify?certId=123
           try {
             const url = new URL(decodedText, window.location.origin);
@@ -268,11 +316,34 @@ export default function Verify() {
             handleVerify(decodedText, true); // Pass isQRScan: true
           }
         },
-        () => {}
+        (errorMessage: string) => {
+          // Handle scan errors silently (this is called frequently during scanning)
+          console.debug('QR scan error:', errorMessage);
+        }
       );
     } catch (e: any) {
-      setIsScanning(false);
-      toast({ title: 'Camera Error', description: e?.message || 'Unable to start camera', variant: 'destructive' });
+      await stopCamera();
+      let errorMessage = 'Unable to start camera';
+      
+      if (e?.message) {
+        if (e.message.includes('Permission denied') || e.message.includes('NotAllowedError')) {
+          errorMessage = 'Camera permission denied. Please allow camera access and try again.';
+        } else if (e.message.includes('NotFoundError') || e.message.includes('DevicesNotFoundError')) {
+          errorMessage = 'No camera found. Please ensure your device has a camera.';
+        } else if (e.message.includes('NotSupportedError') || e.message.includes('NotReadableError')) {
+          errorMessage = 'Camera not supported or already in use. Please close other applications using the camera.';
+        } else if (e.message.includes('HTTPS') || e.message.includes('secure context')) {
+          errorMessage = 'Camera requires HTTPS. Please ensure you are using a secure connection.';
+        } else {
+          errorMessage = e.message;
+        }
+      }
+      
+      toast({ 
+        title: 'Camera Error', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -299,7 +370,7 @@ export default function Verify() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="manual" className="w-full">
+              <Tabs defaultValue="scan" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-8">
                   <TabsTrigger value="scan" className="gap-2">
                     <QrCode className="h-4 w-4" />
@@ -313,6 +384,21 @@ export default function Verify() {
 
                 <TabsContent value="scan" className="space-y-6">
                   <div className="flex flex-col items-center gap-6 py-6">
+                    {/* Security status indicator */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {blockchainService.isSecureContext() ? (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>Secure connection (HTTPS) - Camera ready</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <span>Insecure connection - Camera access blocked</span>
+                        </>
+                      )}
+                    </div>
+                    
                     {!isScanning && (
                       <div className="w-64 h-64 border-4 border-dashed border-accent/50 rounded-2xl flex items-center justify-center bg-accent/5">
                         <QrCode className="h-32 w-32 text-accent/60" />
@@ -320,15 +406,25 @@ export default function Verify() {
                     )}
                     <div ref={scannerRef} className="w-full flex items-center justify-center" />
                     <div className="flex gap-3">
-                      <Button variant="neon" size="lg" onClick={handleQRScan} disabled={isScanning}>
+                      <Button 
+                        variant="neon" 
+                        size="lg" 
+                        onClick={handleQRScan} 
+                        disabled={isScanning || !blockchainService.isSecureContext()}
+                      >
                         {isScanning ? 'Scanning...' : 'Start QR Scan'}
                       </Button>
                       {isScanning && (
-                        <Button variant="outline" size="lg" onClick={() => setIsScanning(false)}>
+                        <Button variant="outline" size="lg" onClick={stopCamera}>
                           Stop Scan
                         </Button>
                       )}
                     </div>
+                    {!blockchainService.isSecureContext() && (
+                      <p className="text-xs text-muted-foreground text-center max-w-md">
+                        Camera access requires HTTPS. Please ensure your website is served over a secure connection.
+                      </p>
+                    )}
                   </div>
                 </TabsContent>
 
