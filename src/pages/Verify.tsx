@@ -157,6 +157,12 @@ export default function Verify() {
         throw new Error(`Blockchain connection failed: ${connectivity.error}`);
       }
       
+      // Check for network mismatch
+      if (connectivity.networkMismatch) {
+        const supportedNetworks = 'Sepolia (11155111) or Polygon Amoy (80002)';
+        throw new Error(`Wrong network detected. Your contracts are deployed on ${supportedNetworks}, but you're connected to ${connectivity.networkInfo?.name} (${connectivity.networkInfo?.chainId}). Please configure the correct RPC URL.`);
+      }
+      
       // Get certificate data from blockchain
       const cert = await blockchainService.getCertificateData(parseInt(idValue, 10));
       console.log('Certificate data from blockchain:', cert);

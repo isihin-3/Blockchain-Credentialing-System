@@ -24,6 +24,27 @@ const CONTRACT_ADDRESSES = {
 // RPC URL from environment variables
 const RPC_URL = (import.meta as any)?.env?.VITE_RPC_URL || '';
 
+// Network configuration
+const SUPPORTED_NETWORKS = {
+  sepolia: {
+    chainId: 11155111,
+    name: 'Sepolia',
+    rpcUrls: [
+      'https://sepolia.infura.io/v3/YOUR_PROJECT_ID',
+      'https://rpc.sepolia.org',
+      'https://sepolia.g.alchemy.com/v2/YOUR_API_KEY'
+    ]
+  },
+  polygonAmoy: {
+    chainId: 80002,
+    name: 'Polygon Amoy',
+    rpcUrls: [
+      'https://rpc-amoy.polygon.technology',
+      'https://polygon-amoy.g.alchemy.com/v2/YOUR_API_KEY'
+    ]
+  }
+};
+
 // Optional admin override via env var
 const ADMIN_ADDRESS = (import.meta as any)?.env?.VITE_ADMIN_ADDRESS
   ? String((import.meta as any).env.VITE_ADMIN_ADDRESS).toLowerCase()
@@ -861,7 +882,7 @@ class BlockchainService {
   }
 
   // Test blockchain connectivity
-  async testConnectivity(): Promise<{ connected: boolean; error?: string; networkInfo?: any }> {
+  async testConnectivity(): Promise<{ connected: boolean; error?: string; networkInfo?: any; networkMismatch?: boolean }> {
     try {
       this.ensureReadContracts();
       if (!this.state.provider) {
@@ -872,19 +893,35 @@ class BlockchainService {
       const network = await this.state.provider.getNetwork();
       const blockNumber = await this.state.provider.getBlockNumber();
       
+      // Check if we're on a supported network
+      const supportedChainIds = Object.values(SUPPORTED_NETWORKS).map(n => n.chainId);
+      const networkMismatch = !supportedChainIds.includes(network.chainId);
+      
       return { 
         connected: true, 
         networkInfo: {
           name: network.name,
           chainId: network.chainId,
           blockNumber: blockNumber
-        }
+        },
+        networkMismatch
       };
     } catch (error: any) {
       console.error('Blockchain connectivity test failed:', error);
+      
+      // Check for specific error types
+      let errorMessage = error.message || 'Failed to connect to blockchain';
+      if (error.message?.includes('429')) {
+        errorMessage = 'Rate limit exceeded. Please check your RPC URL configuration.';
+      } else if (error.message?.includes('401')) {
+        errorMessage = 'Unauthorized. Please check your RPC URL and API key.';
+      } else if (error.message?.includes('CORS')) {
+        errorMessage = 'CORS error. RPC URL may not be accessible from browser.';
+      }
+      
       return { 
         connected: false, 
-        error: error.message || 'Failed to connect to blockchain'
+        error: errorMessage
       };
     }
   }

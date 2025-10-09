@@ -27,11 +27,17 @@ Create a `.env.local` file in your project root with the following variables:
 
 ```bash
 # Blockchain Configuration (CRITICAL - REQUIRED FOR VERIFICATION TO WORK)
+# Your contracts are deployed on Sepolia (Chain ID: 11155111) or Polygon Amoy (Chain ID: 80002)
+
+# For Sepolia Testnet:
 VITE_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
-# Or use alternative RPC URLs:
-# VITE_RPC_URL=https://polygon-mumbai.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
-# VITE_RPC_URL=https://rpc.ankr.com/polygon_mumbai
-# VITE_RPC_URL=https://polygon-mumbai.infura.io/v3/YOUR_INFURA_PROJECT_ID
+# Or alternatives for Sepolia:
+# VITE_RPC_URL=https://rpc.sepolia.org
+# VITE_RPC_URL=https://sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
+
+# For Polygon Amoy Testnet:
+# VITE_RPC_URL=https://rpc-amoy.polygon.technology
+# VITE_RPC_URL=https://polygon-amoy.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
 
 # Contract Addresses (update these with your deployed contract addresses)
 VITE_CERT_AGENCY_ADDRESS=0x18F3040088d9933C55722474daFfd273E1d562dD
@@ -106,14 +112,28 @@ Vercel should automatically detect this as a Vite project, but verify these sett
 ## 🐛 Troubleshooting
 
 ### Verification Not Working? (Most Common Issue)
-1. **Missing RPC URL**: Check browser console for "No RPC URL configured" warning
-   - Solution: Add `VITE_RPC_URL` environment variable in Vercel
-   - Get free RPC URL from Infura, Alchemy, or Ankr
-2. **Blockchain Connection Failed**: Check console for connectivity errors
-   - Solution: Verify RPC URL is correct and accessible
-   - Test RPC URL in browser: `curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' YOUR_RPC_URL`
-3. **Contract Addresses**: Ensure all contract addresses are correct
-4. **Network Mismatch**: Make sure you're using the correct network (Sepolia, Mumbai, etc.)
+1. **Network Mismatch (CRITICAL)**: Your contracts are on Sepolia/Amoy but app connects to Mainnet
+   - **Error**: "Wrong network detected. Your contracts are deployed on Sepolia (11155111) or Polygon Amoy (80002), but you're connected to Mainnet (1)"
+   - **Solution**: Use Sepolia or Amoy RPC URL, NOT Mainnet
+   - **Sepolia RPC**: `https://sepolia.infura.io/v3/YOUR_PROJECT_ID`
+   - **Amoy RPC**: `https://rpc-amoy.polygon.technology`
+
+2. **Rate Limit Exceeded (429 errors)**: Using default/throttled RPC endpoints
+   - **Error**: "Rate limit exceeded" or "Request-Rate Exceeded"
+   - **Solution**: Get your own RPC URL from Infura, Alchemy, or use free alternatives
+   - **Free alternatives**: `https://rpc.sepolia.org` or `https://rpc-amoy.polygon.technology`
+
+3. **Missing RPC URL**: Check browser console for "No RPC URL configured" warning
+   - **Solution**: Add `VITE_RPC_URL` environment variable in Vercel
+   - **Must be for Sepolia or Amoy, NOT Mainnet**
+
+4. **Blockchain Connection Failed**: Check console for connectivity errors
+   - **Solution**: Verify RPC URL is correct and accessible
+   - **Test RPC URL**: `curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' YOUR_RPC_URL`
+
+5. **Contract Addresses**: Ensure all contract addresses are correct
+6. **CORS Errors**: RPC URL not accessible from browser
+   - **Solution**: Use browser-compatible RPC URLs (Infura, Alchemy, or public endpoints)
 
 ### Camera Still Not Working?
 1. **Check HTTPS**: Ensure your site is served over HTTPS
