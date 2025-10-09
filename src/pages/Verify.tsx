@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ export default function Verify() {
   const [learnerName, setLearnerName] = useState("");
   const [marks, setMarks] = useState("");
   const [verificationResult, setVerificationResult] = useState<any>(null);
+  const [verificationKey, setVerificationKey] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const scannerRef = useRef<HTMLDivElement | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -27,6 +28,7 @@ export default function Verify() {
     staffName?: string;
   }>({});
   const html5QrCodeRef = useRef<any>(null);
+  const fetchingDetailsRef = useRef<boolean>(false);
 
   // Cleanup function to properly stop the camera
   const stopCamera = async () => {
@@ -55,11 +57,20 @@ export default function Verify() {
   }, []);
 
   // Function to fetch additional details for verification result
-  const fetchVerificationDetails = async (result: any) => {
+  const fetchVerificationDetails = useCallback(async (result: any) => {
     if (!result || (!result.instituteId && !result.templateId && !result.staffId)) return;
     
+    // Prevent duplicate calls
+    if (fetchingDetailsRef.current) {
+      console.log('Details already being fetched, skipping...');
+      return;
+    }
+    
+    fetchingDetailsRef.current = true;
     setDetailsLoading(true);
-    setFetchedDetails({});
+    
+    // Don't reset fetchedDetails immediately to prevent flickering
+    // setFetchedDetails({});
     
     try {
       const promises = [];
@@ -115,8 +126,9 @@ export default function Verify() {
       console.error('Error fetching verification details:', error);
     } finally {
       setDetailsLoading(false);
+      fetchingDetailsRef.current = false;
     }
-  };
+  }, []);
 
   const handleVerify = async (idOverride?: string, isQRScan: boolean = false) => {
     const idValue = (idOverride ?? certificateId).trim();
@@ -139,9 +151,18 @@ export default function Verify() {
       return;
     }
 
+    // Prevent multiple verification calls
+    if (isLoading) {
+      console.log('Verification already in progress, skipping...');
+      return;
+    }
+
     setIsLoading(true);
+    // Reset fetching details flag when starting new verification
+    fetchingDetailsRef.current = false;
     setFetchedDetails({});
     setVerificationResult(null);
+    setVerificationKey(prev => prev + 1); // Increment key to force re-render
     try {
       console.log('=== VERIFICATION START ===');
       console.log('Certificate ID:', idValue);
@@ -522,7 +543,7 @@ export default function Verify() {
 
               {/* Verification Result */}
               {verificationResult && (
-                <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                <div key={verificationKey} className="mt-4 space-y-4 animate-in fade-in slide-in-from-bottom-4">
                   <div className="border-t border-border/50 pt-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-heading text-xl font-semibold">Verification Result</h3>
@@ -657,6 +678,8 @@ export default function Verify() {
                         setLearnerName("");
                         setMarks("");
                         setFetchedDetails({});
+                        setVerificationKey(prev => prev + 1);
+                        fetchingDetailsRef.current = false;
                       }}
                         className="gap-2"
                       >
