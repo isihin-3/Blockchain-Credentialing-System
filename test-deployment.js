@@ -147,9 +147,15 @@ async function runTests() {
     console.log('   1. Open the deployed site in a browser');
     console.log('   2. Navigate to the Verify page');
     console.log('   3. Check that "Secure connection (HTTPS) - Camera ready" is displayed');
-    console.log('   4. Try the QR code scanner');
-    console.log('   5. Verify the "Stop Scan" button closes the camera');
-    console.log('   6. Test manual verification with a valid certificate ID');
+    console.log('   4. Open browser dev tools and check console for any errors');
+    console.log('   5. Try the QR code scanner');
+    console.log('   6. Verify the "Stop Scan" button closes the camera');
+    console.log('   7. Test manual verification with a valid certificate ID');
+    console.log('   8. Check console for "Blockchain connectivity" logs');
+    console.log('\n⚠️  If verification fails:');
+    console.log('   - Check that VITE_RPC_URL environment variable is set in Vercel');
+    console.log('   - Verify the RPC URL is accessible and correct');
+    console.log('   - Ensure contract addresses match your deployed contracts');
     
   } catch (error) {
     console.log('❌ Some tests failed!');
