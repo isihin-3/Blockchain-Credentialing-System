@@ -5,20 +5,66 @@ export const TrustArchitecture: React.FC = () => {
   return (
     <section className="w-full bg-background trust-architecture-section">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-12 md:py-16 lg:py-20">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight leading-tight">
-            <span className="bg-gradient-to-r from-accent via-accent/80 to-accent bg-clip-text text-transparent">
-              Transforming Education Credentials
-            </span>
-            <span className="text-foreground ml-2">
-              Through Blockchain Technology
-            </span>
-          </h2>
-          <p className="text-sm md:text-base text-muted-foreground mt-3 max-w-2xl mx-auto">
-            Five smart contracts working together to create tamper-proof, instantly verifiable certificates for every skill and achievement.
-          </p>
-        </div>
 
+        {/* Role-Based UI Information */}
+        <div className="mt-8 bg-gradient-to-br from-accent/10 via-accent/5 to-accent/15 dark:from-accent/20 dark:via-accent/10 dark:to-accent/25 rounded-2xl p-6  border border-accent/30 shadow-lg">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent to-accent/80 rounded-full flex items-center justify-center shadow-xl mr-4">
+                <Users className="h-7 w-7 text-white" />
+              </div>
+              <h4 className="text-xl md:text-2xl font-bold text-accent dark:text-accent">
+                Role-Based User Interface
+              </h4>
+            </div>
+            <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6">
+              The platform features an <strong className="text-accent">intelligent role-based UI system</strong> that dynamically adapts to each user's authority level and responsibilities within the blockchain ecosystem.
+            </p>
+
+            {/* Role-specific features grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+              <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
+                <div className="flex items-center mb-2">
+                  <Shield className="h-5 w-5 text-blue-500 mr-2" />
+                  <span className="font-semibold text-sm text-blue-700 dark:text-blue-300">NVCET Managers</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Institution management, approval workflows, system oversight</p>
+              </div>
+
+              <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
+                <div className="flex items-center mb-2">
+                  <Building2 className="h-5 w-5 text-green-500 mr-2" />
+                  <span className="font-semibold text-sm text-green-700 dark:text-green-300">Institutions</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Template creation, staff management, learner registration</p>
+              </div>
+
+              <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
+                <div className="flex items-center mb-2">
+                  <Users className="h-5 w-5 text-purple-500 mr-2" />
+                  <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">Certifiers</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Certificate issuance, learner verification, credential management</p>
+              </div>
+
+              <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
+                <div className="flex items-center mb-2">
+                  <GraduationCap className="h-5 w-5 text-amber-500 mr-2" />
+                  <span className="font-semibold text-sm text-amber-700 dark:text-amber-300">Learners</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Credential viewing, verification requests, achievement tracking</p>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-accent/5 rounded-xl border border-accent/20">
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-accent">Smart Permissions:</strong> Each role has tailored functionality,
+                blockchain permissions, and interface elements that match their specific responsibilities
+                within the decentralized credentialing ecosystem.
+              </p>
+            </div>
+          </div>
+        </div>
         {/* Three-Level Authority Structure */}
         <div className="mt-12 md:mt-16 lg:mt-20">
           <div className="max-w-5xl mx-auto">
@@ -121,61 +167,40 @@ export const TrustArchitecture: React.FC = () => {
               </p>
             </div>
 
-            {/* Role-Based UI Information */}
-            <div className="mt-8 bg-gradient-to-br from-accent/10 via-accent/5 to-accent/15 dark:from-accent/20 dark:via-accent/10 dark:to-accent/25 rounded-2xl p-6 md:p-8 border border-accent/30 shadow-lg">
+
+          </div>
+        </div>
+
+
+        {/* Contracts Architecture Card */}
+        <div className="mt-16">
+          <div className="max-w-5xl mx-auto">
+            <div className=" text-center mb-8">
               <div className="text-center">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-accent to-accent/80 rounded-full flex items-center justify-center shadow-xl mr-4">
-                    <Users className="h-7 w-7 text-white" />
-                  </div>
-                  <h4 className="text-xl md:text-2xl font-bold text-accent dark:text-accent">
-                    Role-Based User Interface
-                  </h4>
-                </div>
-                <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6">
-                  The platform features an <strong className="text-accent">intelligent role-based UI system</strong> that dynamically adapts to each user's authority level and responsibilities within the blockchain ecosystem.
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight leading-tight mb-2">
+                  <span className="bg-gradient-to-r from-accent via-accent/80 to-accent bg-clip-text text-transparent">
+                    Transforming Education Credentials
+                  </span>
+                  <span className="text-foreground ml-2">
+                    Through Blockchain Technology
+                  </span>
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground mt-3 max-w-2xl mx-auto">
+                  Five smart contracts working together to create tamper-proof, instantly verifiable certificates for every skill and achievement.
                 </p>
-                
-                {/* Role-specific features grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                  <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
-                    <div className="flex items-center mb-2">
-                      <Shield className="h-5 w-5 text-blue-500 mr-2" />
-                      <span className="font-semibold text-sm text-blue-700 dark:text-blue-300">NVCET Managers</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Institution management, approval workflows, system oversight</p>
-                  </div>
-                  
-                  <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
-                    <div className="flex items-center mb-2">
-                      <Building2 className="h-5 w-5 text-green-500 mr-2" />
-                      <span className="font-semibold text-sm text-green-700 dark:text-green-300">Institutions</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Template creation, staff management, learner registration</p>
-                  </div>
-                  
-                  <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
-                    <div className="flex items-center mb-2">
-                      <Users className="h-5 w-5 text-purple-500 mr-2" />
-                      <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">Certifiers</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Certificate issuance, learner verification, credential management</p>
-                  </div>
-                  
-                  <div className="bg-background/50 rounded-xl p-4 border border-accent/20">
-                    <div className="flex items-center mb-2">
-                      <GraduationCap className="h-5 w-5 text-amber-500 mr-2" />
-                      <span className="font-semibold text-sm text-amber-700 dark:text-amber-300">Learners</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Credential viewing, verification requests, achievement tracking</p>
-                  </div>
+              </div>
+              <div className="mt-8 md:mt-10 lg:mt-12 grid grid-cols-1 gap-8 items-center">
+                <div className="w-full">
+                  <img
+                    src="/contracts-architecture.png"
+                    alt="Five smart contracts architecture diagram"
+                    className="mx-auto w-full max-w-5xl h-auto object-contain border-2 border-accent/40 rounded-2xl shadow-md"
+                    style={{ imageRendering: "-webkit-optimize-contrast" }}
+                  />
                 </div>
-                
-                <div className="mt-6 p-4 bg-accent/5 rounded-xl border border-accent/20">
-                  <p className="text-sm text-muted-foreground">
-                    <strong className="text-accent">Smart Permissions:</strong> Each role has tailored functionality, 
-                    blockchain permissions, and interface elements that match their specific responsibilities 
-                    within the decentralized credentialing ecosystem.
+                <div className="max-w-3xl mx-auto text-center text-muted-foreground text-base md:text-lg leading-relaxed">
+                  <p>
+                    Our platform runs on a five-contract blockchain architecture—a decentralized “chain of trust.” Each contract has a defined role, from verifying institutions to securing individual credentials. This structure makes every achievement tamper-proof, scalable, and permanently verifiable without third-party servers.
                   </p>
                 </div>
               </div>
@@ -183,22 +208,6 @@ export const TrustArchitecture: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 md:mt-10 lg:mt-12 grid grid-cols-1 gap-8 items-center">
-          <div className="w-full">
-            <img
-              src="/contracts-architecture.png"
-              alt="Five smart contracts architecture diagram"
-              className="mx-auto w-full max-w-5xl h-auto object-contain"
-              style={{ imageRendering: "-webkit-optimize-contrast" }}
-            />
-          </div>
-
-          <div className="max-w-3xl mx-auto text-center text-muted-foreground text-base md:text-lg leading-relaxed">
-            <p>
-              Our platform runs on a five-contract blockchain architecture—a decentralized “chain of trust.” Each contract has a defined role, from verifying institutions to securing individual credentials. This structure makes every achievement tamper-proof, scalable, and permanently verifiable without third-party servers..
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   );
